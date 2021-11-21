@@ -1,7 +1,72 @@
-#!/usr/bin/ruby
-# The above can be replaced with whatever language you choose
+#!/usr/bin/env python3
 
-# Modify this file to create your hangman program.
-#
-# The input filename will come as an argument (see completeness_test).
-input_filename = ARGV[0]
+
+def hangman(input_iterator):
+    games = parse_games(input_iterator)
+    for game in games:
+        game_output = play(game)
+        for line in game_output:
+            print(line)
+
+
+def parse_games(lines_iterator):
+    game = []
+    for line in lines_iterator:
+        if line == "\n":
+            yield game
+            game = []
+        else:
+            game.append(line.strip())
+    yield game
+
+
+def play(game):
+    # The first line of each game is the target word.
+    target_word = game.pop(0)
+
+    correct_guesses = []
+    incorrect_guesses = []
+
+    yield render_gamestate(target_word, correct_guesses, incorrect_guesses)
+
+    for guess in game:
+        correct_guesses, incorrect_guesses = make_guess(
+            target_word, correct_guesses, incorrect_guesses, guess
+        )
+        yield render_gamestate(target_word, correct_guesses, incorrect_guesses)
+
+
+def make_guess(target_word, correct_guesses, incorrect_guesses, guess):
+    if guess in target_word:
+        return [*correct_guesses, guess], incorrect_guesses
+    else:
+        return correct_guesses, [*incorrect_guesses, guess]
+
+
+def render_gamestate(target_word, correct_guesses, incorrect_guesses):
+    partially_hidden_word = "".join(
+        letter if letter in correct_guesses else "_" for letter in target_word
+    )
+
+    if all(letter in correct_guesses for letter in target_word):
+        return f"{partially_hidden_word} YOU WIN!"
+
+    life_left = 6 - len(incorrect_guesses)
+
+    if not life_left:
+        return f"{partially_hidden_word} YOU LOSE!"
+
+    gamestate = f"{partially_hidden_word} life left: {life_left}"
+
+    if incorrect_guesses:
+        gamestate += f" incorrect guesses: {''.join(incorrect_guesses)}"
+
+    return gamestate
+
+
+if __name__ == "__main__":
+    import sys
+
+    input_filename = sys.argv[1]
+    with open(input_filename) as input_file:
+        hangman(input_file)
